@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'home_page.dart';
 
 void main() {
@@ -26,21 +27,37 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _phoneController = TextEditingController();
-  String? _errorMessage;
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
-  void _validatePhoneNumber() {
+  String? _errorMessagePhone;
+  String? _errorMessagePassword;
+
+  void _validateInputs() {
     String phone = _phoneController.text.trim();
+    String password = _passwordController.text.trim();
+    bool isValid = true;
 
     if (phone.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
-      setState(() {
-        _errorMessage = "Please enter a valid 10-digit phone number";
-      });
+      _errorMessagePhone = "Please enter a valid 10-digit phone number";
+      isValid = false;
     } else {
-      setState(() {
-        _errorMessage = null;
-      });
-      showOTPBottomSheet();
+      _errorMessagePhone = null;
     }
+
+    if (password.length < 8 ||
+        !RegExp(r'[A-Za-z]').hasMatch(password) ||
+        !RegExp(r'\d').hasMatch(password) ||
+        !RegExp(r'[!@#\$&*~]').hasMatch(password)) {
+      _errorMessagePassword =
+      "Password must be at least 8 characters with letters, numbers & symbols";
+      isValid = false;
+    } else {
+      _errorMessagePassword = null;
+    }
+
+    setState(() {});
+    if (isValid) showOTPBottomSheet();
   }
 
   void showSuccessPopup() {
@@ -68,7 +85,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // close dialog
+                    Navigator.of(context).pop();
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (context) => HomePage()),
                     );
@@ -92,6 +109,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     List<TextEditingController> otpControllers =
     List.generate(4, (_) => TextEditingController());
 
+    int countdown = 30;
+    late Timer timer;
+
+    void startTimer(StateSetter setModalState) {
+      timer = Timer.periodic(Duration(seconds: 1), (timer) {
+        if (countdown > 0) {
+          setModalState(() {
+            countdown--;
+          });
+        } else {
+          timer.cancel();
+        }
+      });
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -99,109 +131,121 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 25,
-            right: 25,
-            top: 30,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Detecting OTP (30s)',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.black,
-                ),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            startTimer(setModalState);
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 25,
+                right: 25,
+                top: 30,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'we have sent a 4-digit OTP on your\nmobile number +91-96**.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(4, (index) {
-                  return Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade400),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Detecting OTP (${countdown}s)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.black,
                     ),
-                    child: Center(
-                      child: TextField(
-                        controller: otpControllers[index],
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20),
-                        decoration: const InputDecoration(
-                          counterText: '',
-                          border: InputBorder.none,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'We have sent a 4-digit OTP on your\nmobile number +91-.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(4, (index) {
+                      return Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade400),
                         ),
-                        onChanged: (value) {
-                          if (value.isNotEmpty && index < 3) {
-                            FocusScope.of(context).nextFocus();
-                          }
-                        },
+                        child: Center(
+                          child: TextField(
+                            controller: otpControllers[index],
+                            keyboardType: TextInputType.number,
+                            maxLength: 1,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 20),
+                            decoration: const InputDecoration(
+                              counterText: '',
+                              border: InputBorder.none,
+                            ),
+                            onChanged: (value) {
+                              if (value.isNotEmpty && index < 3) {
+                                FocusScope.of(context).nextFocus();
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF60C335),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        String enteredOTP =
+                        otpControllers.map((e) => e.text).join();
+                        if (enteredOTP.length == 4) {
+                          Navigator.pop(context);
+                          timer.cancel();
+                          showSuccessPopup();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter all 4 digits')),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        'Register',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF60C335),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('OTP resent')),
+                      );
+                      setModalState(() {
+                        countdown = 30;
+                      });
+                      timer.cancel();
+                      startTimer(setModalState);
+                    },
+                    child: const Text(
+                      'Resend OTP',
+                      style: TextStyle(
+                        color: Color(0xFF60C335),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                  onPressed: () {
-                    String enteredOTP = otpControllers.map((e) => e.text).join();
-                    if (enteredOTP.length == 4) {
-                      Navigator.pop(context);
-                      showSuccessPopup();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter all 4 digits')),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    'Register',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('OTP resent')),
-                  );
-                },
-                child: const Text(
-                  'Resend OTP',
-                  style: TextStyle(
-                    color: Color(0xFF60C335),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -217,53 +261,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 15),
-                Padding(
-                  padding: const EdgeInsets.only(left: 23, right: 10, top: 25),
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Container(
-                      height: 30,
-                      width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black,
-                            blurRadius: 2,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 18, color: Colors.black),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 40),
+                Image.asset(
+                  'assets/images/otp_verification.jpg',
+                  height: 240,
+                  width: 300,
                 ),
                 const SizedBox(height: 20),
-                Center(
-                  child: Image.asset(
-                    'assets/images/otp_verification.jpg',
-                    height: 280,
-                    width: 340,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 40),
                 const Text(
                   'Registration',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 15),
                 const Text(
                   'Enter your Mobile Number',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -273,13 +283,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   style: TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 25),
+
+                /// Phone number field
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: _errorMessage != null ? Colors.red : Colors.grey,
+                      color: _errorMessagePhone != null ? Colors.red : Colors.grey,
                     ),
                   ),
                   child: Row(
@@ -301,15 +313,52 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ],
                   ),
                 ),
-                if (_errorMessage != null)
+                if (_errorMessagePhone != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red, fontSize: 14),
+                      _errorMessagePhone!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+
+                /// Password field with show/hide
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    hintText: "Create Password",
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: _errorMessagePassword != null ? Colors.red : Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_errorMessagePassword != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _errorMessagePassword!,
+                      style: const TextStyle(color: Colors.red),
                     ),
                   ),
                 const SizedBox(height: 25),
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -320,13 +369,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: _validatePhoneNumber,
+                    onPressed: _validateInputs,
                     child: const Text(
                       'Get Started',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 18),
                 TextButton(
                   onPressed: () {},
@@ -353,5 +403,4 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 }
-
 

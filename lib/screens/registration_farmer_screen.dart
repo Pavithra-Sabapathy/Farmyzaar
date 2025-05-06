@@ -9,11 +9,44 @@ class RegistrationFarmerScreen extends StatefulWidget {
 }
 
 class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
-  void _navigateToEnterDetails() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EnterDetailsScreen()),
-    );
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  String? _errorMessagePhone;
+  String? _errorMessagePassword;
+
+  void _validateAndNavigate() {
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+    bool isValid = true;
+
+    if (phone.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
+      _errorMessagePhone = 'Please enter a valid 10-digit phone number';
+      isValid = false;
+    } else {
+      _errorMessagePhone = null;
+    }
+
+    if (password.length < 8 ||
+        !RegExp(r'[A-Za-z]').hasMatch(password) ||
+        !RegExp(r'\d').hasMatch(password) ||
+        !RegExp(r'[!@#\$%^&*~]').hasMatch(password)) {
+      _errorMessagePassword =
+      'Password must be 8+ characters, include letters, numbers & symbols';
+      isValid = false;
+    } else {
+      _errorMessagePassword = null;
+    }
+
+    setState(() {});
+
+    if (isValid) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => EnterDetailsScreen()),
+      );
+    }
   }
 
   @override
@@ -26,41 +59,6 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
-                /// Back Icon
-                Padding(
-                  padding: const EdgeInsets.only(left: 23, right: 10, top: 25),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 30,
-                        width: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black,
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            size: 18,
-                            color: Colors.black,
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 const SizedBox(height: 25),
 
                 /// Registration Title
@@ -75,7 +73,7 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
 
                 const SizedBox(height: 20),
 
-                /// Image with Container background matching the screen
+                /// Image
                 Center(
                   child: Container(
                     height: 250,
@@ -90,7 +88,7 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
 
                 const SizedBox(height: 30),
 
-                /// Welcome Farmer Text
+                /// Welcome Text
                 const Text(
                   'WELCOME FARMER',
                   style: TextStyle(
@@ -99,10 +97,7 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
                     color: Color(0xFF008054),
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
-                /// Quote or Description
                 const Text(
                   '"Connecting you to a better agricultural future."',
                   textAlign: TextAlign.center,
@@ -112,7 +107,85 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
+
+                /// Phone Number Input
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: _errorMessagePhone != null ? Colors.red : Colors.grey),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text("+91", style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          maxLength: 10,
+                          decoration: const InputDecoration(
+                            counterText: "",
+                            hintText: "Mobile Number",
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_errorMessagePhone != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _errorMessagePhone!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+
+                const SizedBox(height: 20),
+
+                /// Password Input
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: _errorMessagePassword != null ? Colors.red : Colors.grey),
+                  ),
+                  child: TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      hintText: "Create Password",
+                      border: InputBorder.none,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                if (_errorMessagePassword != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _errorMessagePassword!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+
+                const SizedBox(height: 40),
 
                 /// Get Started Button
                 SizedBox(
@@ -125,7 +198,7 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: _navigateToEnterDetails,
+                    onPressed: _validateAndNavigate,
                     child: const Text(
                       'Get Started',
                       style: TextStyle(color: Colors.white, fontSize: 16),
@@ -142,5 +215,3 @@ class _RegistrationFarmerScreenState extends State<RegistrationFarmerScreen> {
     );
   }
 }
-
-
